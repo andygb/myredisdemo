@@ -1,5 +1,7 @@
 package com.test.redis.jedis;
 
+import com.test.serialize.ProtostuffSerializer;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -69,6 +71,51 @@ public class RedisUtil {
     }
 
     return false;
+  }
+
+  public <T> boolean setObjectValue(String key, T value) {
+    ShardedJedis shardedJedis = null;
+    try {
+      shardedJedis = shardedJedisPool.getResource();
+      ProtostuffSerializer protobuf = new ProtostuffSerializer();
+      byte[] valueByte = protobuf.serialize(value);
+      byte[] keyByte = key.getBytes("utf-8");
+
+      String jedisResult = shardedJedis.setex(keyByte, 3600, valueByte);
+      if ("OK".equalsIgnoreCase(jedisResult)) {
+        return true;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      if (shardedJedis != null) {
+        shardedJedis.close();
+      }
+    }
+
+    return false;
+  }
+
+  public <T> T getObjectValue(String key, Class<T> clazz) {
+    ShardedJedis shardedJedis = null;
+    try {
+      shardedJedis = shardedJedisPool.getResource();
+      byte[] keyByte = key.getBytes("utf-8");
+      byte[] valueByte = shardedJedis.get(keyByte);
+
+      if (valueByte != null && valueByte.length > 0) {
+        ProtostuffSerializer protobuf = new ProtostuffSerializer();
+        T objectT = protobuf.deserialize(valueByte, clazz);
+        return objectT;
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      if (shardedJedis != null) {
+        shardedJedis.close();
+      }
+    }
+    return null;
   }
 
 }

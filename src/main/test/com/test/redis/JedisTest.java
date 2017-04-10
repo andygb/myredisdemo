@@ -1,6 +1,11 @@
 package com.test.redis;
 
 import com.test.redis.jedis.RedisUtil;
+import com.test.web.dto.Person;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import junit.framework.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +18,7 @@ import org.springframework.util.StringUtils;
  */
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations="classpath*:config/*.xml")
+@ContextConfiguration(locations="classpath*:config/spring/*.xml")
 public class JedisTest {
 
   @Autowired
@@ -73,4 +78,39 @@ public class JedisTest {
     boolean result = redisUtil.deleteKeyValue(key);
     System.out.println("删除结果: " + result);
   }
+
+  @Test
+  public void setObjectValueTest() {
+    String key = "classMetaList";
+    List<Person> list = new ArrayList();
+
+    Person person = new Person(1, "Tom", 28, new Date(), new ArrayList<Person>());
+//    Person meta1 = new Person(11, "小红", 26, new Date(), null);
+//    Person meta2 = new Person(12, "小明", 22, new Date(), null);
+//    Person meta3 = new Person(13, "小刚", 24, new Date(), null);
+//
+//    person.getClassMetas().add(meta1);
+//    person.getClassMetas().add(meta2);
+//    person.getClassMetas().add(meta3);
+
+    for (int i = 1; i <= 100; i++) {
+      Person p = new Person(i, "name-" + i, 100-i, new Date(), new ArrayList<Person>());
+      person.getClassMetas().add(p);
+    }
+
+    boolean result = redisUtil.setObjectValue(key, person);
+
+    Assert.assertTrue(result);
+  }
+
+  @Test
+  public void getObjectValueTest() {
+    String key = "classMetaList";
+    Person person = redisUtil.getObjectValue(key, Person.class);
+
+    System.out.println(person);
+
+  }
+
+
 }
